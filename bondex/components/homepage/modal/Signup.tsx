@@ -1,4 +1,4 @@
-
+'use client'
 import {SignUpModalProps} from "@/types/Types";
 import GoogleIcon from '@mui/icons-material/Google';
 

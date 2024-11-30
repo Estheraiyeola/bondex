@@ -9,7 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.1.9",
+    "@mui/material": "^6.1.9",
     "@mysten/sui.js": "^0.54.1",
     "@mysten/zklogin": "^0.7.30",
     "axios": "^1.7.8",
