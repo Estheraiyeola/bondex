@@ -47,10 +47,9 @@ export default function Hero() {
                           text4={'Stake'} onClick={handleShowModal} />
             </div>
             <div className={'mx-[60px] mt-7 '}>
-                <Services image={viralMarketing} text1={'Decentralized ROSCAs'}
-                          text2={'Experience the future of Rotating Savings and Credit Association. Create or Join a ROSCA Community powered by blockchain'}
-                          text3={' ROSCA Community powered by blockchain'}
-                          text4={'Get Started'}  onClick={handleShowModal} />
+                <Services image={viralMarketing} text1={'Community Pool'}
+                          text2={'Users can create personal savings, join rotating savings communities, or collectively pool funds until a specified end date, providing flexible and collaborative financial solutions.'}
+                          text4={'Join'}  onClick={handleShowModal} />
             </div>
             <div className={'relative flex overflow-hidden'}>
                 <p className={'relative ml-[60px] h-[50px] md:h-[100px] mt-8 w-[50px] md:w-[100px] mb-10 bg-[#075055] rounded-[50px]'}></p>
