@@ -1,8 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import logo from '../../public/navbar/logo.png';
+import MenuIcon from '@mui/icons-material/Menu';
 import Image from 'next/image';
-import { Icon } from "@iconify/react";
 import Hamburger from "../../components/navbar/Hamburger";
 import Link from 'next/link';
 import CommunityMenu from '../community/modal/communities';
@@ -62,8 +62,8 @@ export default function Navbar() {
           Connect
         </button>
         <div className="block md:hidden cursor-pointer relative flex-col">
-          <Icon
-            icon="ci:hamburger-lg"
+          hamburger
+          <MenuIcon
             className="text-white h-[40px] w-[40px]"
             onClick={toggleDropdown}
           />

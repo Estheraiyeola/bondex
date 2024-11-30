@@ -1,5 +1,4 @@
 import React from 'react';
-import { Icon } from '@iconify/react';
 import winner from '../../public/comunity/winner.png';
 import firstPlaceImage from '../../public/comunity/goldMedal.png';
 import secondPlaceImage from '../../public/comunity/silverMedal.png';
@@ -28,7 +27,8 @@ export default function Leaderboard() {
                     <Image src={winner} alt={'winnerImage'} className={'w-6 h-6'} />
                 </div>
                 <div className={'bg-[#09A896] mt-10 text-center py-1 rounded-lg px-3 flex items-center'}>
-                    <Icon icon={'ic:baseline-arrow-drop-up'} className={'text-center text-white h-8 w-8'} />
+                    {/*pass an icon*/}
+                    {/*<Icon icon={'ic:baseline-arrow-drop-up'} className={'text-center text-white h-8 w-8'} />*/}
                 </div>
             </div>
             <div className="bg-[#073A45] min-h-screen flex flex-col items-center">

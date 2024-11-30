@@ -1,6 +1,6 @@
 
 import {SignUpModalProps} from "@/types/Types";
-import {Icon} from '@iconify/react';
+import GoogleIcon from '@mui/icons-material/Google';
 
 const SignUpModal: React.FC<SignUpModalProps> = ({ onClose }) => {
     // const [email, setEmail] = useState('');
@@ -47,7 +47,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ onClose }) => {
                         onClick={handleGoogleSignIn}
                         className="mt-2 w-full flex whitespace-nowrap gap-5 items-center justify-center bg-[#073A45] text-white py-2 px-4 rounded-md hover:bg-[#09A896] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                         Sign In with Google
-                        <Icon icon={'flat-color-icons:google'} className={'w-6 h-6'}/>
+                        <GoogleIcon className={'w-6 h-6'}/>
                     </button>
                 </div>
                 <button
