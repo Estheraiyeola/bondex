@@ -1,18 +1,17 @@
-/*
-#[test_only]
-module contract::contract_tests;
-// uncomment this line to import the module
-// use contract::contract;
 
-const ENotImplemented: u64 = 0;
+// #[test_only]
+// module contract::contract_tests{
+//     use sui::test_scenario::{begin};
+//     use contract::bondex::{register_user};
+//     use std::string::{String}
 
-#[test]
-fun test_contract() {
-    // pass
-}
+//     #[test]
+//     fun test_register_user() {
+//         let scenario = begin(@0x1);
 
-#[test, expected_failure(abort_code = ::contract::contract_tests::ENotImplemented)]
-fun test_contract_fail() {
-    abort ENotImplemented
-}
-*/
+//         let email = String
+//         let user = register_user(email, ctx);
+//         scenario.register_user(user);
+
+//     }
+// }
