@@ -8,19 +8,9 @@ export default function Page(){
     return(
         <div>
             <Navbar/>
-            <div className={'bg-[#073A45] px-[24px] pb-5'}>
-                <div className={'bg-[#073A45] mb-10'}>
-                    <div className={'flex justify-between px-10'}>
-                        <div className={'flex flex-col justify-center items-start w-full'}>
-                            <p className={'ml-4 text-[13px] mb-5 md:text-[40px]'}>About</p>
-                            <Image src={logo} alt={'bondexLogo'}
-                                   className={'left-[-7] w-[120px] h-[60px] md:h-[120px] md:w-[300px]'}/>
-                        </div>
-                        <Image src={heroImage} alt={'heroImage'} className={'h-[200px] w-[200px] md:h-[400px] md:w-[400px]'}/>
-                    </div>
-                </div>
-                <p className={' whitespace-nowrap overflow-hidden justify-center flex text-[15px] md:text-2xl font-bold  text-[#089A8C]'}>Bondex <span
-                    className={'ml-2 text-[15px] md:text-2xl text-white font-bold'}>Mission And Vision</span></p>
+            <div className={'bg-[#073A45] pt-10 px-[24px] pb-5'}>
+                <p className={' text-left whitespace-nowrap overflow-hidden justify-center flex text-[15px] md:text-2xl font-bold  text-[#089A8C]'}>Bondex <span
+                    className={'ml-2  text-[15px] md:text-2xl text-white font-bold'}>Mission And Vision</span></p>
 
                 <div className={' justify-center whitespace-normal overflow-hidden text-center p-3 mt-10 px-10'}>
                     <div className={'bg-[#09A896] p-8 overflow-visible'}>
@@ -52,7 +42,7 @@ export default function Page(){
                             growth, and social impact.</p>
                     </div>
                 </div>
-                <div className={'text-center mt-[60px]'}>
+                <div className={'text-center mt-[60px] mx-[230px]'}>
                     <p className={'text-[#09A896] font-extrabold text-3xl'}>Bondex <span
                         className={'text-white font-extrabold text-3xl'}>Team Member</span></p>
                     <div className={'mt-8 mb-10'}>

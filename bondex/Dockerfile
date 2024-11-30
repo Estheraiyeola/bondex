@@ -21,3 +21,4 @@ EXPOSE 3000
 
 # Set the command to start the application
 CMD ["npm", "run", "start"]
+5
