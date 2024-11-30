@@ -1,8 +1,4 @@
-import React from 'react';
 import Navbar from "../../components/navbar/Navbar";
-import Image from "next/image";
-import logo from "../../public/navbar/logo.png";
-import heroImage from "../../public/hero/heroImage.png";
 import Footer from '../../components/footer/footer';
 export default function Page(){
     return(
@@ -46,12 +42,12 @@ export default function Page(){
                     <p className={'text-[#09A896] font-extrabold text-3xl'}>Bondex <span
                         className={'text-white font-extrabold text-3xl'}>Team Member</span></p>
                     <div className={'mt-8 mb-10'}>
-                        <p>At <span className={'text-[#09A896]'}>Bondex</span>, we're driven by a passionate and
+                        <p>At <span className={'text-[#09A896]'}>Bondex</span>, we are driven by a passionate and
                             talented
                             team who are dedicated to revolutionizing community finance. Our team members bring a wealth
                             of
                             experience in blockchain technology, decentralized finance, and financial innovation.
-                            Together, we're working tirelessly to build a future where finance is accessible,
+                            Together, we are working tirelessly to build a future where finance is accessible,
                             transparent,
                             and empowering for everyone.
                         </p>

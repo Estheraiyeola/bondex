@@ -10,6 +10,11 @@
     "deploy": "tsx scripts/deploy.ts"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.5",
+    "@emotion/styled": "^11.13.5",
+    "@mui/icons-material": "^6.1.9",
+    "@mui/material": "^6.1.9",
+    "@mysten/sui.js": "^0.54.1",
     "@iconify/react": "^5.0.2",
     "@mysten/sui": "^1.15.1",
     "@mysten/zklogin": "^0.7.30",
