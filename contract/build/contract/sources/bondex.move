@@ -16,8 +16,7 @@ module contract::bondex{
         users: vector<User>
     }
 
-    public struct CommunitySavings has key, store {
-        id: UID,
+    public struct CommunitySavings has store {
         name: String,
         creator: address,
         participants: vector<Savings>,
@@ -36,13 +35,15 @@ module contract::bondex{
 
     
 
-    public struct RotationalSavings has store {
+    public struct RotationalSavings has key, store {
+        id: UID,
         base: CommunitySavings,  
         rotation_period_in_days: u64,
         current_recipient_index: u64,
         contribution_amount_per_cycle: u64,
         total_cycles: u64,
         completed_cycles: u64,
+        asset_value: u64
     }
 
     public struct RotationalSavingsRegistry has key, store {
@@ -50,7 +51,8 @@ module contract::bondex{
         rotational_savings: vector<RotationalSavings>
     }
 
-    public struct CommunityPool has store {
+    public struct CommunityPool has key, store {
+        id: UID,
         base: CommunitySavings,           
         goal_amount: u64,
         contributors: vector<Savings>,
@@ -68,7 +70,8 @@ module contract::bondex{
         participant: vector<address>,
     }
 
-    public struct LeaderboardSavings has store {
+    public struct LeaderboardSavings has key, store {
+        id: UID,
         base: CommunitySavings,
         leaderboard: LeaderboardEntry,
         reward_threshold: u64,
@@ -124,15 +127,15 @@ module contract::bondex{
 
 
     // User functions
-
-    public fun register_user(ctx: &mut TxContext, user_registry: &mut UserRegistry,  email: String): &mut User {
-
+    #[allow(lint(self_transfer))] 
+    public fun register_user(email: String, ctx: &mut TxContext){
         //todo
-        let no = user_registry.users.find_index!(|user| user.email == email);
-        assert!(no.is_none(), 1);
+        // let no = user_registry.users.find_index!(|user| user.email == email);
+        // assert!(no.is_none(), 1);
 
+       // let id = ;
         let user = User{
-            id: object::new(ctx),
+            id:object::new(ctx),
             email,
             is_active: false,
             creation_date: 0,
@@ -140,11 +143,21 @@ module contract::bondex{
             wallet_id: @0x0
         };
 
+        
+        transfer::public_transfer(user, ctx.sender());
 
-        let pool_index = vector::length(&user_registry.users);
-        user_registry.users.push_back(user);
-        &mut user_registry.users[pool_index]
+        //  let pool_index = vector::length(&user_registry.users);
+        // user_registry.users.push_back(user);
+
+        // vector::borrow_mut(&mut user_registry.users, pool_index - 1);
+       
     }
+
+    public fun push_user_object_to_registry( userRegistry: &mut UserRegistry, user: User){
+        //todo
+        userRegistry.users.push_back(user);
+    }
+    
     #[allow(unused_mut_ref)]
     public fun get_user(email: String, user_registry: &mut UserRegistry): &User {
         //todo
@@ -165,16 +178,17 @@ module contract::bondex{
     }
 
     // Rotational Savings functions
-
-    public fun create_rotation_savings(ctx: &mut TxContext, rotational_savings_registry: &mut RotationalSavingsRegistry, name: String, creator: address, total_balance: u64, rotation_period_in_days: u64, contribution_amount_per_cycle: u64, total_cycles: u64): &mut RotationalSavings {
+    #[allow(lint(self_transfer))]
+    public fun create_rotation_savings(name: String, creator: address, rotation_period_in_days: u64, contribution_amount_per_cycle: u64, total_cycles: u64, asset_value: u64, ctx: &mut TxContext) {
         //todo
+        assert!(asset_value >= contribution_amount_per_cycle * total_cycles, 1001);
         let mut rotational_savings = RotationalSavings{
+            id: object::new(ctx),
             base: CommunitySavings{
-                id: object::new(ctx),
                 name,
                 creator,
                 participants: vector::empty<Savings>(),
-                total_balance,
+                total_balance: 0,
                 is_active: false,
                 creation_date: 0,
                 end_date: 0
@@ -184,6 +198,7 @@ module contract::bondex{
             contribution_amount_per_cycle,
             total_cycles,
             completed_cycles: 0,
+            asset_value
         };
 
         let creator_savings = Savings{
@@ -193,10 +208,7 @@ module contract::bondex{
         };
 
         rotational_savings.base.participants.push_back(creator_savings);
-
-        let pool_index = vector::length(&rotational_savings_registry.rotational_savings);
-        rotational_savings_registry.rotational_savings.push_back(rotational_savings);
-        &mut rotational_savings_registry.rotational_savings[pool_index]
+        transfer::public_transfer(rotational_savings, ctx.sender());
     }
 
     #[allow(unused_mut_ref)]
@@ -214,43 +226,72 @@ module contract::bondex{
         
     }
 
-    public fun deposit_to_rotation_savings(
-        ctx: &mut TxContext,
-        creators_address: address, 
+    public fun join_rotation_savings(
+        creator: address, 
         contributor: address, 
         amount: u64, 
-        rotational_savings_registry: &mut RotationalSavingsRegistry
-    ): &mut RotationalSavings {
-        // Ensure the deposit amount is positive
-        assert!(amount > 0, 1);
+        asset_value: u64,
+        rotational_savings_list: &mut vector<RotationalSavings>,
+        ctx: &mut TxContext
+    ){
+        //todo
+        let mut rotational_savings = rotational_savings_list.find_index!(|rotational_savings| rotational_savings.base.creator == creator);
+        assert!(rotational_savings.is_some(), 1);
 
-        // Find the rotational savings created by the given creator
-        let mut index: Option<u64> = rotational_savings_registry
-            .rotational_savings
+        let rotational_savings_index = option::extract(&mut rotational_savings);
+
+        let rotational_savings = vector::borrow_mut( rotational_savings_list, rotational_savings_index);
+
+
+        let participant_index = rotational_savings.base.participants.find_index!(|participant| participant.creator == contributor);
+        assert!(participant_index.is_none(), 2);
+
+
+        let new_participant = Savings{
+            id: object::new(ctx),
+            creator: contributor,
+            balance: amount
+        };
+
+        rotational_savings.base.participants.push_back(new_participant);
+        rotational_savings.base.total_balance = rotational_savings.base.total_balance + amount;
+        rotational_savings.asset_value = rotational_savings.asset_value + asset_value;
+    }
+
+    public fun deposit_to_rotation_savings(
+        creators_address: address, 
+        contributor: address, 
+        amount: u64,
+        rotational_savings_list: &mut vector<RotationalSavings>,
+        ctx: &mut TxContext,
+    ): &mut RotationalSavings {
+        // Find the rotational savings by the creator's address
+        let mut index: Option<u64> = rotational_savings_list
             .find_index!(|rotational_savings| rotational_savings.base.creator == creators_address);
-        
-        assert!(index.is_some(), 2); // Ensure the creator exists
+
+        // Ensure the savings group exists
+        assert!(index.is_some(), 1);
         let savings_index = option::extract(&mut index);
 
-        // Borrow mutable reference to the savings
-        let rotational_savings = vector::borrow_mut(&mut rotational_savings_registry.rotational_savings, savings_index);
+        // Borrow mutable reference to the savings group
+        let rotational_savings = vector::borrow_mut(rotational_savings_list, savings_index);
 
-        // Find the participant
-        let mut participant_index = rotational_savings.base.participants
+        // Find the contributor
+        let mut contributor_index = rotational_savings.base.participants
             .find_index!(|participant| participant.creator == contributor);
-        
-        // Update participant's balance or add a new participant
-        if (participant_index.is_some()) {
-            let index = option::extract(&mut participant_index);
-            let participant = vector::borrow_mut(&mut rotational_savings.base.participants, index);
-            participant.balance = participant.balance + amount;
+
+        // Update contributor's balance or add a new contributor
+        if (contributor_index.is_some()) {
+            let index = option::extract(&mut contributor_index);
+            let contributor = vector::borrow_mut(&mut rotational_savings.base.participants, index);
+            contributor.balance = contributor.balance + amount;
         } else {
-            let new_participant = Savings {
+            let new_contributor = Savings {
                 id: object::new(ctx),
                 creator: contributor,
                 balance: amount
             };
-            rotational_savings.base.participants.push_back(new_participant);
+            rotational_savings.base.participants.push_back(new_contributor);
         };
 
         // Update the total balance of the rotational savings
@@ -262,11 +303,10 @@ module contract::bondex{
    public fun withdraw_from_rotation_savings(
         creators_address: address,
         recipient_address: address,
-        rotational_savings_registry: &mut RotationalSavingsRegistry
+        rotational_savings_list: &mut vector<RotationalSavings>,
     ): u64 {
         // Find the rotational savings by the creator's address
-        let mut index: Option<u64> = rotational_savings_registry
-            .rotational_savings
+        let mut index: Option<u64> = rotational_savings_list
             .find_index!(|rotational_savings| rotational_savings.base.creator == creators_address);
 
         // Ensure the savings group exists
@@ -274,20 +314,25 @@ module contract::bondex{
         let savings_index = option::extract(&mut index);
 
         // Borrow mutable reference to the savings group
-        let rotational_savings = vector::borrow_mut(&mut rotational_savings_registry.rotational_savings, savings_index);
+        let rotational_savings = vector::borrow_mut( rotational_savings_list, savings_index);
 
-        // Ensure the recipient is the current recipient
-        let current_recipient_index = rotational_savings.current_recipient_index;
-        let current_recipient = vector::borrow(&rotational_savings.base.participants, current_recipient_index);
-        assert!(current_recipient.creator == recipient_address, 2); // Not the current recipient
+        // Find the recipient
+        let mut recipient_index = rotational_savings.base.participants
+            .find_index!(|participant| participant.creator == recipient_address);
+
+        // Ensure the recipient exists
+        assert!(recipient_index.is_some(), 2);
+        let recipient_index = option::extract(&mut recipient_index);
+
+        // Borrow mutable reference to the recipient
+        let recipient = vector::borrow_mut(&mut rotational_savings.base.participants, recipient_index);
 
         // Perform the withdrawal
-        let withdrawal_amount = rotational_savings.base.total_balance;
-        rotational_savings.base.total_balance = 0;
+        let withdrawal_amount = recipient.balance;
+        recipient.balance = 0;
 
-        // Update the state for the next cycle
-        rotational_savings.completed_cycles = rotational_savings.completed_cycles + 1;
-        rotational_savings.current_recipient_index = (current_recipient_index + 1) % vector::length(&rotational_savings.base.participants);
+        // Update the total balance of the rotational savings
+        rotational_savings.base.total_balance = rotational_savings.base.total_balance - withdrawal_amount;
 
         withdrawal_amount
     }
@@ -316,15 +361,15 @@ module contract::bondex{
     
 
     // Community Pool functions
-
-    public fun create_community_pool(ctx: &mut TxContext, community_pool_registry: &mut CommunityPoolRegistry, name: String, creator: address, participants: vector<Savings>, goal_amount: u64, distribution_policy: String, amount_per_cycle: u64): &mut CommunityPool {
+    #[allow(lint(self_transfer))]
+    public fun create_community_pool(name: String, creator: address, goal_amount: u64, distribution_policy: String, amount_per_cycle: u64, ctx: &mut TxContext) {
         //todo
         let mut community_pool = CommunityPool{
+            id: object::new(ctx),
             base: CommunitySavings{
-                id: object::new(ctx),
                 name,
                 creator,
-                participants,
+                participants: vector::empty<Savings>(),
                 total_balance: 0,
                 is_active: false,
                 creation_date: 0,
@@ -344,9 +389,35 @@ module contract::bondex{
 
         community_pool.base.participants.push_back(creator_savings);
 
-        let pool_index = vector::length(&community_pool_registry.community_pools);
-        community_pool_registry.community_pools.push_back(community_pool);
-        &mut community_pool_registry.community_pools[pool_index]
+        transfer::transfer(community_pool, ctx.sender())
+    }
+
+    public fun join_community_pool(
+        creator: address, 
+        contributor: address, 
+        amount: u64, 
+        community_pool_list: &mut vector<CommunityPool>,
+        ctx: &mut TxContext
+    ) {
+        //todo
+        let mut community_pool = community_pool_list.find_index!(|community_pool| community_pool.base.creator == creator);
+        assert!(community_pool.is_some(), 1);
+
+        let community_pool_index = option::extract(&mut community_pool);
+
+        let community_pool = vector::borrow_mut(community_pool_list, community_pool_index);
+
+        let participant_index = community_pool.base.participants.find_index!(|participant| participant.creator == contributor);
+        assert!(participant_index.is_none(), 2);
+
+        let new_participant = Savings{
+            id: object::new(ctx),
+            creator: contributor,
+            balance: amount
+        };
+
+        community_pool.base.participants.push_back(new_participant);
+        community_pool.base.total_balance = community_pool.base.total_balance + amount;
     }
        
     #[allow(unused_mut_ref)]
@@ -364,25 +435,24 @@ module contract::bondex{
     }
 
     public fun deposit_to_community_pool(
-        ctx: &mut TxContext,
         creator: address, 
         contributor: address, 
         amount: u64, 
-        community_pool_registry: &mut CommunityPoolRegistry
+        community_pool_list: &mut vector<CommunityPool>,
+        ctx: &mut TxContext
     ): &mut CommunityPool {
         // Ensure the deposit amount is positive
         assert!(amount > 0, 1);
 
         // Find the community pool created by the given creator
-        let mut index: Option<u64> = community_pool_registry
-            .community_pools
+        let mut index: Option<u64> = community_pool_list
             .find_index!(|community_pool| community_pool.base.creator == creator);
         
         assert!(index.is_some(), 2); // Ensure the creator exists
         let pool_index = option::extract(&mut index);
 
         // Borrow mutable reference to the community pool
-        let community_pool = vector::borrow_mut(&mut community_pool_registry.community_pools, pool_index);
+        let community_pool = vector::borrow_mut(community_pool_list, pool_index);
 
         // Find the contributor
         let mut contributor_index = community_pool.base.participants
@@ -411,11 +481,10 @@ module contract::bondex{
     public fun withdraw_from_community_pool(
         creator: address,
         contributor: address,
-        community_pool_registry: &mut CommunityPoolRegistry
+        community_pool_list: &mut vector<CommunityPool>,
     ): u64 {
         // Find the community pool by the creator's address
-        let mut index: Option<u64> = community_pool_registry
-            .community_pools
+        let mut index: Option<u64> = community_pool_list
             .find_index!(|community_pool| community_pool.base.creator == creator);
 
         // Ensure the pool exists
@@ -423,7 +492,7 @@ module contract::bondex{
         let pool_index = option::extract(&mut index);
 
         // Borrow mutable reference to the pool
-        let community_pool = vector::borrow_mut(&mut community_pool_registry.community_pools, pool_index);
+        let community_pool = vector::borrow_mut(community_pool_list, pool_index);
 
         // Find the contributor
         let mut contributor_index = community_pool.base.participants
@@ -467,12 +536,12 @@ module contract::bondex{
     }
 
     // Leaderboard Savings functions
-
-    public fun create_leaderboard_savings(ctx: &mut TxContext, leader_board_savings_registry: &mut LeaderboardSavingsRegistry, name: String, creator: address,  reward_threshold: u64, rewards_pool: u64, reward_policy: String): &mut  LeaderboardSavings {
+    #[allow(lint(self_transfer))]
+    public fun create_leaderboard_savings(name: String, creator: address,  reward_threshold: u64, rewards_pool: u64, reward_policy: String, ctx: &mut TxContext) {
         //todo
         let mut leaderboard_savings = LeaderboardSavings{
+            id: object::new(ctx),
             base: CommunitySavings{
-                id: object::new(ctx),
                 name,
                 creator,
                 participants: vector::empty<Savings>(),
@@ -499,10 +568,117 @@ module contract::bondex{
         leaderboard_savings.base.participants.push_back(creator_savings);
         leaderboard_savings.leaderboard.participant.push_back(creator);
 
+        transfer::transfer(leaderboard_savings, ctx.sender())
 
-        let pool_index = vector::length(&leader_board_savings_registry.leadership);
-        leader_board_savings_registry.leadership.push_back(leaderboard_savings);
-        &mut leader_board_savings_registry.leadership[pool_index]
+    }
+
+    public fun join_leaderboard_savings(
+        creator: address, 
+        contributor: address, 
+        amount: u64, 
+        leaderboard_savings_list: &mut vector<LeaderboardSavings>,
+        ctx: &mut TxContext
+    ) {
+        //todo
+        let mut leaderboard_savings = leaderboard_savings_list.find_index!(|leaderboard_savings| leaderboard_savings.base.creator == creator);
+        assert!(leaderboard_savings.is_some(), 1);
+
+        let leaderboard_savings_index = option::extract(&mut leaderboard_savings);
+
+        let leaderboard_savings = vector::borrow_mut(leaderboard_savings_list, leaderboard_savings_index);
+
+        let participant_index = leaderboard_savings.base.participants.find_index!(|participant| participant.creator == contributor);
+        assert!(participant_index.is_none(), 2);
+
+        let new_participant = Savings{
+            id: object::new(ctx),
+            creator: contributor,
+            balance: amount
+        };
+
+        leaderboard_savings.base.participants.push_back(new_participant);
+        leaderboard_savings.base.total_balance = leaderboard_savings.base.total_balance + amount;
+    }
+
+    public fun deposit_to_leaderboard_savings(
+        creator: address, 
+        contributor: address, 
+        amount: u64, 
+        leaderboard_savings_list: &mut vector<LeaderboardSavings>,
+        ctx: &mut TxContext
+    ): &mut LeaderboardSavings {
+        // Ensure the deposit amount is positive
+        assert!(amount > 0, 1);
+
+        // Find the leaderboard savings created by the given creator
+        let mut index: Option<u64> = leaderboard_savings_list
+            .find_index!(|leaderboard_savings| leaderboard_savings.base.creator == creator);
+        
+        assert!(index.is_some(), 2); // Ensure the creator exists
+        let savings_index = option::extract(&mut index);
+
+        // Borrow mutable reference to the leaderboard savings
+        let leaderboard_savings = vector::borrow_mut(leaderboard_savings_list, savings_index);
+
+        // Find the contributor
+        let mut contributor_index = leaderboard_savings.base.participants
+            .find_index!(|participant| participant.creator == contributor);
+        
+        // Update contributor's balance or add a new contributor
+        if (contributor_index.is_some()) {
+            let index = option::extract(&mut contributor_index);
+            let contributor = vector::borrow_mut(&mut leaderboard_savings.base.participants, index);
+            contributor.balance = contributor.balance + amount;
+        } else {
+            let new_contributor = Savings {
+                id: object::new(ctx),
+                creator: contributor,
+                balance: amount
+            };
+            leaderboard_savings.base.participants.push_back(new_contributor);
+        };
+
+        // Update the total balance of the leaderboard savings
+        leaderboard_savings.base.total_balance = leaderboard_savings.base.total_balance + amount;
+
+        leaderboard_savings
+    }
+
+    public fun withdraw_from_leaderboard_saving(
+        creator: address,
+        contributor: address,
+        leaderboard_savings_list: &mut vector<LeaderboardSavings>,
+    ): u64 {
+        // Find the leaderboard savings by the creator's address
+        let mut index: Option<u64> = leaderboard_savings_list
+            .find_index!(|leaderboard_savings| leaderboard_savings.base.creator == creator);
+
+        // Ensure the savings group exists
+        assert!(index.is_some(), 1);
+        let savings_index = option::extract(&mut index);
+
+        // Borrow mutable reference to the savings group
+        let leaderboard_savings = vector::borrow_mut(leaderboard_savings_list, savings_index);
+
+        // Find the contributor
+        let mut contributor_index = leaderboard_savings.base.participants
+            .find_index!(|participant| participant.creator == contributor);
+
+        // Ensure the contributor exists
+        assert!(contributor_index.is_some(), 2);
+        let contributor_index = option::extract(&mut contributor_index);
+
+        // Borrow mutable reference to the contributor
+        let contributor = vector::borrow_mut(&mut leaderboard_savings.base.participants, contributor_index);
+
+        // Perform the withdrawal
+        let withdrawal_amount = contributor.balance;
+        contributor.balance = 0;
+
+        // Update the total balance of the leaderboard savings
+        leaderboard_savings.base.total_balance = leaderboard_savings.base.total_balance - withdrawal_amount;
+
+        withdrawal_amount
     }
     
     #[allow(unused_mut_ref)]
@@ -521,25 +697,7 @@ module contract::bondex{
     }
 
     
-    public fun get_leaderboard_savings_contributors(name: String, leader_board_savings_registry: &mut LeaderboardSavingsRegistry): &vector<Savings> {
-        //todo
-        let mut leaderboard_savings = leader_board_savings_registry.leadership.find_index!(|leaderboard_savings| leaderboard_savings.base.name == name);
-        assert!(leaderboard_savings.is_some(), 1);
-        let leaderboard_savings_index = option::extract(&mut leaderboard_savings);
-
-        let contributors = &leader_board_savings_registry.leadership[leaderboard_savings_index].base.participants;
-        contributors
-    }
-
-    public fun get_leaderboard_savings_balance(name: String, leader_board_savings_registry: &mut LeaderboardSavingsRegistry): u64 {
-        //todo
-        let mut leaderboard_savings = leader_board_savings_registry.leadership.find_index!(|leaderboard_savings| leaderboard_savings.base.name == name);
-        assert!(leaderboard_savings.is_some(), 1);
-        let leaderboard_savings_index = option::extract(&mut leaderboard_savings);
-
-        let balance = leader_board_savings_registry.leadership[leaderboard_savings_index].base.total_balance;
-        balance
-    }    
+  
 
 
 
