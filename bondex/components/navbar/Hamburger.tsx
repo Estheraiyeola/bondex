@@ -14,4 +14,5 @@ export default function Hamburger() {
             <div className="hover:text-teal-500 hover:-translate-y-1 transition-all">
                 <h1>Community</h1>
             </div> </div>
-    ); }
+    );
+}
